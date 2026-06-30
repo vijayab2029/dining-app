@@ -13,9 +13,7 @@ async function apiFetch(path: string) {
 async function getLocations() {
   const data = await apiFetch("/menu/locations");
   if (!Array.isArray(data.supported_locations)) {
-    throw new Error(
-      "Expected supported_locations to be an array",
-    );
+    throw new Error("Expected supported_locations to be an array");
   }
   return data;
 }
@@ -25,9 +23,7 @@ async function getPeriods(location_name: string) {
     `/menu/periods?location_name=${encodeURIComponent(location_name)}`,
   );
   if (!Array.isArray(data)) {
-    throw new Error(
-      "Expected periods to be an array",
-    );
+    throw new Error("Expected periods to be an array");
   }
   return data;
 }
@@ -37,9 +33,7 @@ async function getMenu(location: string, periodName: string) {
     `/menu/?location_name=${encodeURIComponent(location)}&period_name=${encodeURIComponent(periodName)}`,
   );
   if (!Array.isArray(data.categories)) {
-    throw new Error(
-      "Categories should be an array",
-    );
+    throw new Error("Categories should be an array");
   }
   return data;
 }
