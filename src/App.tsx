@@ -1,8 +1,18 @@
+import {Routes, Route} from "react-router"
+import Landing from "./pages/Landing"
+import Menu from "./pages/Menu"
+import Dashboard from "./pages/Dashboard"
+import Layout from "./components/Layout"
+
 function App() {
-  return(
-    <div>
-      <h1>Dining App</h1>
-    </div>
+  return (
+    <Routes>
+      <Route element = {<Layout />}>
+        <Route path = "/" element = {<Landing/>} />
+        <Route path = "/menu" element = {<Menu />} />
+        <Route path = "/dashboard" element = {<Dashboard />} />
+        </Route>
+    </Routes>
   )
 }
 

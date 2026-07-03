@@ -19,7 +19,11 @@ function mockFetchFailure(status = 404, statusText = "Not Found") {
 describe("getLocations", () => {
   it("fetches and return locations", async () => {
     mockFetchSuccess({
-      supported_locations: ["stetson east", "international village", "60 belvidere"],
+      supported_locations: [
+        "stetson east",
+        "international village",
+        "60 belvidere",
+      ],
     });
     const result = await getLocations();
     expect(result.supported_locations).toHaveLength(3);
