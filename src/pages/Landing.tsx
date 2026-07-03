@@ -50,10 +50,10 @@ function Landing() {
             and understand your nutrition
           </p>
           <div className="flex gap-4 mt-8">
-            <button className="relative z-10 bg-green-600 text-white px-6 py-3 rounded-lg font-medium">
+            <button className="relative z-10 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors duration-150">
               Sign in
             </button>
-            <button className="relative z-10 border border-white text-white px-6 py-3 rounded-lg font-medium">
+            <button className="relative z-10 border border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-green-900 transition-colors duration-150">
               Continue as Guest
             </button>
           </div>
@@ -85,7 +85,7 @@ function Landing() {
           <h2 className="text-3xl font-semibold text-white mt-16">Ready to eat smarter at Northeastern?</h2>
           <p className="text-white mt-2">Your menu. Your nutrition.</p>
           <div className="flex justify-center">
-            <button className="bg-green-600 text-white px-12 py-3 rounded-lg font-medium mt-8">Sign Up</button>
+            <button className="bg-green-600 text-white px-12 py-3 rounded-lg font-medium mt-8 hover:bg-green-700 transition-colors duration-150">Sign Up</button>
           </div>
         </div>
       </section>
