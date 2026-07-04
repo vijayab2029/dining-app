@@ -19,8 +19,9 @@ function Navbar() {
       </div>
 
       <div className="flex items-center">
-        <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-          Sign In
+        <button className="group relative bg-green-600 text-white px-4 py-2 rounded-md overflow-hidden">
+          <span className="absolute inset-0 bg-green-700 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-600"></span>
+          <span className="relative z-10">Sign In</span>
         </button>
       </div>
     </nav>
