@@ -41,7 +41,7 @@ function Landing() {
     <main>
       <Container>
         <section className="min-h-screen flex flex-col items-center justify-center py-24 border-b border-gray-200 bg-[url(/stetson_east.jpg)] bg-fixed bg-cover relative">
-        <div className="absolute inset-0 bg-green-900/70 bg-cover"></div>
+        <div className="absolute inset-0 bg-green-900/70"></div>
           <h1 className="relative z-10 font-bold text-5xl text-center text-white">
             Browse menus, track nutrition, eat smarter at Northeastern
           </h1>
