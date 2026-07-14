@@ -1,10 +1,16 @@
+import { UtensilsCrossed, Salad, Filter } from "lucide-react";
+
 interface FeatureCardProps {
+    icon: React.ReactNode
     title: string
     description: string
 }
-function FeatureCard({title, description}: FeatureCardProps) {
+function FeatureCard({icon, title, description}: FeatureCardProps) {
     return (
-        <div className="bg-white rounded-xl p-6 shadow-sm flex-1">
+        <div className="bg-white rounded-xl px-6 py-8 shadow-sm flex-1 h-48 flex flex-col justify-center items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center mb-4">
+                {icon}
+            </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
             <p className="text-gray-500">{description}</p>
         </div>
@@ -50,25 +56,27 @@ function Landing() {
             and understand your nutrition
           </p>
           <div className="flex gap-4 mt-8">
-            <button className="relative z-10 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors duration-150">
-              Sign in
+            <button className="group relative z-10 bg-green-600 text-white px-6 py-3 rounded-lg font-medium overflow-hidden">
+              <span className="absolute inset-0 bg-green-700 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+              <span className="relative z-10">Sign in</span>
             </button>
-            <button className="relative z-10 border border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-green-900 transition-colors duration-150">
-              Continue as Guest
+            <button className="group relative z-10 border border-white text-white px-6 py-3 rounded-lg font-medium overflow-hidden">
+              <span className="absolute inset-0 bg-white origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+              <span className="relative z-10 group-hover:text-green-900 transition-colors duration-300">Continue as Guest</span>
             </button>
           </div>
         </section>
         <section className="bg-green-600 py-8 text-white text-center">
           <p className="text-lg font-medium">Stats coming soon</p>
         </section>
-        <section className="py-24 text-center border-b border-gray-200">
+        <section className="py-32 text-center border-b border-gray-200">
           <h2 className="text-center text-3xl font-bold text-gray-900 mb-12">
             Our Features
           </h2>
           <div className="flex gap-6">
-            <FeatureCard title="Menu Browsing" description="Browse real-time menus across all Northeastern Dining Halls" />
-            <FeatureCard title="Nutrition Tracking" description="Log meals and track goals and nutritional intake" />
-            <FeatureCard title="Dietary Filters" description="Filter by Vegan, Vegetarian, Halal, Gluten-Free, Allergies and more" />
+            <FeatureCard icon={<UtensilsCrossed className="w-6 h-6 text-white" />} title="Menu Browsing" description="Browse real-time menus across all Northeastern Dining Halls" />
+            <FeatureCard icon={<Salad className="w-6 h-6 text-white" />} title="Nutrition Tracking" description="Log meals and track goals and nutritional intake" />
+            <FeatureCard icon={<Filter className="w-6 h-6 text-white" />} title="Dietary Filters" description="Filter by Vegan, Vegetarian, Halal, Gluten-Free, Allergies and more" />
           </div>
         </section>
         <section className="py-24 text-center">
@@ -85,7 +93,10 @@ function Landing() {
           <h2 className="text-3xl font-semibold text-white mt-16">Ready to eat smarter at Northeastern?</h2>
           <p className="text-white mt-2">Your menu. Your nutrition.</p>
           <div className="flex justify-center">
-            <button className="bg-green-600 text-white px-12 py-3 rounded-lg font-medium mt-8 hover:bg-green-700 transition-colors duration-150">Sign Up</button>
+            <button className="group relative bg-green-600 text-white px-12 py-3 rounded-lg font-medium mt-8 overflow-hidden">
+              <span className="absolute inset-0 bg-green-700 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+              <span className="relative z-10">Get Started</span>
+            </button>
           </div>
         </div>
       </section>
