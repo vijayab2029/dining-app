@@ -5,7 +5,7 @@ from services.dining_service import SUPPORTED_LOCATIONS, get_menu, Menu, get_per
 
 router = APIRouter(prefix="/menu", tags=["menu"])
 
-@router.get("/")
+@router.get("/", response_model_by_alias=False)
 async def menu_route(location_name: str, period_name: str) -> Menu:
     try:
         result = await get_menu(location_name = location_name, period_name = period_name)
@@ -14,7 +14,6 @@ async def menu_route(location_name: str, period_name: str) -> Menu:
         raise HTTPException(status_code = 404, detail = f"unsupported/unknown location: {location_name}")
     except HTTPError as e:
         raise HTTPException(status_code = e.response.status_code, detail = str(e))
-
 
 @router.get("/locations")
 async def locations_route() -> Dict[str, List[str]]:
