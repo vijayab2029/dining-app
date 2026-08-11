@@ -55,19 +55,6 @@ function Landing() {
             Browse dining hall menus in real time, log your meals, get analytics
             and understand your nutrition
           </p>
-          <div className="flex gap-4 mt-8">
-            <button className="group relative z-10 bg-green-600 text-white px-6 py-3 rounded-lg font-medium overflow-hidden">
-              <span className="absolute inset-0 bg-green-700 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-              <span className="relative z-10">Sign in</span>
-            </button>
-            <button className="group relative z-10 border border-white text-white px-6 py-3 rounded-lg font-medium overflow-hidden">
-              <span className="absolute inset-0 bg-white origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-              <span className="relative z-10 group-hover:text-green-900 transition-colors duration-300">Continue as Guest</span>
-            </button>
-          </div>
-        </section>
-        <section className="bg-green-600 py-8 text-white text-center">
-          <p className="text-lg font-medium">Stats coming soon</p>
         </section>
         <section className="py-32 text-center border-b border-gray-200">
           <h2 className="text-center text-3xl font-bold text-gray-900 mb-12">
@@ -92,12 +79,6 @@ function Landing() {
         <div className="max-w-5xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-semibold text-white mt-16">Ready to eat smarter at Northeastern?</h2>
           <p className="text-white mt-2">Your menu. Your nutrition.</p>
-          <div className="flex justify-center">
-            <button className="group relative bg-green-600 text-white px-12 py-3 rounded-lg font-medium mt-8 overflow-hidden">
-              <span className="absolute inset-0 bg-green-700 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-              <span className="relative z-10">Get Started</span>
-            </button>
-          </div>
         </div>
       </section>
     </main>
