@@ -3,8 +3,6 @@ import { supabase } from "../supabase";
 import type { Nutrients } from "../components/MenuItemCard";
 import NutrientChart from "../components/NutrientChart";
 
-// Mirrors MenuItemCard's NUTRIENT_ROWS labels/units; not imported because that
-// file must only export components (react-refresh/only-export-components).
 const NUTRIENT_ROWS: { key: keyof Nutrients; label: string; unit: string }[] = [
   { key: "calories", label: "Calories", unit: "cal" },
   { key: "protein", label: "Protein", unit: "g" },
