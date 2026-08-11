@@ -3,6 +3,33 @@ import { supabase } from "../supabase";
 import type { Nutrients } from "../components/MenuItemCard";
 import NutrientChart from "../components/NutrientChart";
 
+// Mirrors MenuItemCard's NUTRIENT_ROWS labels/units; not imported because that
+// file must only export components (react-refresh/only-export-components).
+const NUTRIENT_ROWS: { key: keyof Nutrients; label: string; unit: string }[] = [
+  { key: "calories", label: "Calories", unit: "cal" },
+  { key: "protein", label: "Protein", unit: "g" },
+  { key: "carbohydrates", label: "Total Carbohydrates", unit: "g" },
+  { key: "total_fat", label: "Total Fat", unit: "g" },
+  { key: "saturated_fat", label: "Saturated Fat", unit: "g" },
+  { key: "trans_fat", label: "Trans Fat", unit: "g" },
+  { key: "dietary_fiber", label: "Dietary Fiber", unit: "g" },
+  { key: "sugar", label: "Sugar", unit: "g" },
+  { key: "sodium", label: "Sodium", unit: "mg" },
+  { key: "cholesterol", label: "Cholesterol", unit: "mg" },
+  { key: "potassium", label: "Potassium", unit: "mg" },
+  { key: "calcium", label: "Calcium", unit: "mg" },
+  { key: "iron", label: "Iron", unit: "mg" },
+  { key: "calories_from_fat", label: "Calories From Fat", unit: "" },
+];
+
+const FEATURED_NUTRIENT_KEYS: (keyof Nutrients)[] = ["calories", "protein", "sodium", "total_fat"];
+const featuredNutrientRows = FEATURED_NUTRIENT_KEYS.map(
+  (key) => NUTRIENT_ROWS.find((row) => row.key === key)!
+);
+const remainingNutrientRows = NUTRIENT_ROWS.filter(
+  (row) => !FEATURED_NUTRIENT_KEYS.includes(row.key)
+);
+
 export type MealLog = {
   id: string;
   item_name: string;
@@ -56,6 +83,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeWindow, setTimeWindow] = useState<TimeWindow>("today");
+  const [showMoreNutrients, setShowMoreNutrients] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,29 +167,51 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
-          <div className="flex flex-wrap gap-4 mb-8">
-            <div className="border border-gray-200 rounded-md p-6 inline-block">
-              <p className="text-xs text-gray-500">Total Calories</p>
-              <p className="text-3xl font-semibold text-gray-900">{totalCalories}</p>
-              <p className="text-xs text-gray-500">
-                across {visibleLogs.length} logged item
-                {visibleLogs.length === 1 ? "" : "s"}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            {featuredNutrientRows.map(({ key, label, unit }) => (
+              <div key={key} className="border border-gray-200 rounded-md p-4">
+                <p className="text-xs text-gray-500">{label}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {key === "calories" ? totalCalories : nutrientTotals[key] ?? 0}
+                  {unit && <span className="text-sm font-normal text-gray-500 ml-1">{unit}</span>}
+                </p>
+                {key === "calories" && (
+                  <p className="text-xs text-gray-500">
+                    across {visibleLogs.length} logged item
+                    {visibleLogs.length === 1 ? "" : "s"}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
 
-            {Object.keys(nutrientTotals).length > 0 && (
-              <div className="border border-gray-200 rounded-md p-6 inline-block">
-                <p className="text-xs text-gray-500 mb-2">Nutrient totals</p>
-                <div className="flex flex-col gap-1">
-                  {Object.entries(nutrientTotals).map(([nutrient, total]) => (
-                    <p key={nutrient} className="text-sm text-gray-900">
-                      <span className="capitalize">{nutrient}</span>: {total}
-                    </p>
+          {Object.keys(nutrientTotals).length > 0 && (
+            <div className="border border-gray-200 rounded-md p-4 mb-8">
+              <button
+                onClick={() => setShowMoreNutrients((current) => !current)}
+                className="text-xs font-medium text-green-600 hover:text-green-700"
+              >
+                {showMoreNutrients ? "Show fewer nutrients" : "Show more nutrients"}
+              </button>
+
+              {showMoreNutrients && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-3 pt-3 border-t border-gray-100">
+                  {remainingNutrientRows.map(({ key, label, unit }) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between gap-2 rounded-md bg-gray-50 border border-gray-100 px-3 py-2"
+                    >
+                      <span className="text-xs text-gray-500">{label}</span>
+                      <span className="text-xs font-medium text-gray-900">
+                        {nutrientTotals[key] ?? 0}
+                        {unit && <span className="text-gray-400 ml-0.5">{unit}</span>}
+                      </span>
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <NutrientChart logs={visibleLogs} timeWindow={timeWindow} />
 
