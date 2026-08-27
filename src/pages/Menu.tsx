@@ -29,6 +29,7 @@ function Menu() {
     async function loadMenu() {
       setLoading(true);
       setError(null);
+      setSelectedForLog({});
       try {
         const data = await getMenu(selectedHall.toLowerCase(), selectedPeriod);
         if (!cancelled) {
