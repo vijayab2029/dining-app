@@ -3,7 +3,7 @@ from curl_cffi.requests.exceptions import HTTPError
 from fastapi import APIRouter, HTTPException
 from services.dining_service import SUPPORTED_LOCATIONS, get_menu, Menu, get_periods
 
-router = APIRouter(prefix="/menu", tags=["menu"])
+router = APIRouter(prefix="/api/menu", tags=["menu"])
 
 @router.get("/", response_model_by_alias=False)
 async def menu_route(location_name: str, period_name: str) -> Menu:
