@@ -9,6 +9,8 @@ function AuthModal({ onClose }: AuthModalProps) {
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
@@ -23,7 +25,18 @@ function AuthModal({ onClose }: AuthModalProps) {
       if (error) setError(error.message);
       else onClose();
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      if (password !== confirmPassword) {
+        setError("Password and confirmation password do not match")
+        setLoading(false)
+        return;
+      }
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
       if (error) setError(error.message);
       else setSignUpSuccess(true);
     }
@@ -68,6 +81,17 @@ function AuthModal({ onClose }: AuthModalProps) {
                 required
                 className="border border-gray-200 rounded-md px-4 py-2"
               />
+
+              {mode === "signUp" && (
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="border border-gray-200 rounded-md px-4 py-2"
+                />
+              )}
 
               {error && <p className="text-red-600 text-sm">{error}</p>}
 
