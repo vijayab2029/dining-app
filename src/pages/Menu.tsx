@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { getMenu } from "../api";
 import MenuItemCard from "../components/MenuItemCard";
 import type { MenuItem } from "../components/MenuItemCard";
 import { supabase } from "../supabase";
+import { normalizeAllergen } from "../utils/allergens";
 
 const DINING_HALLS = ["Stetson East", "International Village", "60 Belvidere"];
 const PERIODS = ["Breakfast", "Lunch", "Dinner"];
@@ -21,6 +23,29 @@ function Menu() {
   const [selectedForLog, setSelectedForLog] = useState<Record<string, number>>({});
 
   const [logStatus, setLogStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedSettings() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data } = await supabase
+        .from("user_dietary_settings")
+        .select("allergens, dietary_preferences")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setExcludedAllergens(data.allergens);
+      setSelectedPreferences(data.dietary_preferences);
+    }
+
+    loadSavedSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedHall || !selectedPeriod) return;
@@ -54,7 +79,7 @@ function Menu() {
   }, [selectedHall, selectedPeriod]);
 
   const allAllergens = Array.from(
-    new Set(items.flatMap((item) => item.allergens))
+    new Set(items.flatMap((item) => item.allergens.map(normalizeAllergen)))
   ).sort();
   const allPreferences = Array.from(
     new Set(items.flatMap((item) => item.dietary_preferences))
@@ -91,7 +116,7 @@ function Menu() {
       .includes(search.toLowerCase());
 
     const hasNoExcludedAllergen = !item.allergens.some((a) =>
-      excludedAllergens.includes(a)
+      excludedAllergens.map(normalizeAllergen).includes(normalizeAllergen(a))
     );
 
     const matchesAllPreferences = selectedPreferences.every((p) =>
@@ -273,7 +298,12 @@ function Menu() {
           </div>
         )}
 
-        {loading && <p className="text-sm text-gray-500">Loading menu...</p>}
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-500">
+            <Loader2 className="animate-spin text-green-600" size={20} />
+            <span>Loading menu...</span>
+          </div>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         {!loading && !error && (

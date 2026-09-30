@@ -4,7 +4,7 @@ from curl_cffi.requests import AsyncSession
 from pydantic import BaseModel, Field, ConfigDict
 from cachetools import TTLCache
 
-period_cache: TTLCache = TTLCache(maxsize=20, ttl=86400)
+period_cache: TTLCache = TTLCache(maxsize=20, ttl=3600)
 menu_cache: TTLCache = TTLCache(maxsize = 15, ttl = 7200)
 
 SUPPORTED_LOCATIONS: Dict[str, str] = {
@@ -15,9 +15,16 @@ SUPPORTED_LOCATIONS: Dict[str, str] = {
 
 BASE_URL: str = "https://apiv4.dineoncampus.com/locations/"
 
+# The API serves the coffee-only menu unless these browser fetch headers are present.
+FETCH_HEADERS: Dict[str, str] = {
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-site",
+}
+
 async def fetch(url: str) -> Dict[str, Any]:
     async with AsyncSession(impersonate="chrome") as session:
-        response = await session.get(url)
+        response = await session.get(url, headers=FETCH_HEADERS)
         response.raise_for_status()
         data = response.json()
         return data
@@ -131,6 +138,12 @@ def parse_menu(raw_menu: dict[str, Any]) -> Menu:
         categories = categories
     )
 
+async def fetch_menu(location_name: str, period_name: str) -> Menu:
+    location_id = SUPPORTED_LOCATIONS[location_name]
+    period_id = await get_period_id_by_name(location_name, period_name)
+    url = f"{BASE_URL}{location_id}/menu?date={str(date.today())}&period={period_id}"
+    return parse_menu(await fetch(url))
+
 async def get_menu(location_name: str, period_name: str) -> Menu:
     location_id = SUPPORTED_LOCATIONS[location_name]
     cache_key = f"menu-{location_id}-{period_name}-{str(date.today())}"
@@ -138,10 +151,12 @@ async def get_menu(location_name: str, period_name: str) -> Menu:
     if cache_key in menu_cache:
         return menu_cache[cache_key]
 
-    period_id = await get_period_id_by_name(location_name, period_name)
-    url = f"{BASE_URL}{location_id}/menu?date={str(date.today())}&period={period_id}"
-    response = await fetch(url)
+    menu = await fetch_menu(location_name, period_name)
+    if not menu.categories:
+        # Period IDs may have changed since they were cached; refetch once.
+        period_cache.pop(f"periods-{location_id}-{str(date.today())}", None)
+        menu = await fetch_menu(location_name, period_name)
 
-    menu = parse_menu(response)
-    menu_cache[cache_key] = menu
+    if menu.categories:
+        menu_cache[cache_key] = menu
     return menu
