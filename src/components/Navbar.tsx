@@ -39,27 +39,29 @@ function Navbar({ onSignInClick, session }: NavbarProps) {
               Dashboard
             </button>
           )}
+          {session ? (
+            <Link
+              to="/settings"
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Link>
+          ) : (
+            <button
+              onClick={() => setLockedFeature("settings")}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900"
+            >
+              <span className="relative">
+                <Settings className="h-4 w-4" />
+                <Lock className="absolute -bottom-1 -right-1.5 h-2.5 w-2.5" />
+              </span>
+              Settings
+            </button>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-4">
-        {session ? (
-          <Link
-            to="/settings"
-            aria-label="Settings"
-            className="text-gray-500 hover:text-gray-900"
-          >
-            <Settings className="h-5 w-5" />
-          </Link>
-        ) : (
-          <button
-            onClick={() => setLockedFeature("settings")}
-            aria-label="Settings"
-            className="relative text-gray-500 hover:text-gray-900"
-          >
-            <Settings className="h-5 w-5" />
-            <Lock className="absolute -bottom-1 -right-1.5 h-2.5 w-2.5" />
-          </button>
-        )}
         {session ? (
           <>
             <span className="text-gray-500 text-sm">{session.user.email}</span>
