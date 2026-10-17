@@ -2,3 +2,9 @@
 @theme {
     --font-sans: "Inter", sans-serif
 }
+
+@layer base {
+    :where(a, button, input, select, textarea, summary):focus-visible {
+        @apply outline-none ring-2 ring-green-700 ring-offset-2;
+    }
+}

@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Lock, Settings } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
+import Modal from "./Modal";
 
 interface NavbarProps {
   onSignInClick: () => void;
@@ -84,35 +85,31 @@ function Navbar({ onSignInClick, session }: NavbarProps) {
       </div>
 
       {lockedFeature && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm relative">
-            <button
-              onClick={() => setLockedFeature(null)}
-              className="absolute top-4 right-4 text-gray-500"
-            >
-              ✕
-            </button>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              {lockedFeature === "dashboard"
-                ? "Sign in to view your dashboard"
-                : "Sign in to manage your settings"}
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              {lockedFeature === "dashboard"
-                ? "Create an account or sign in to track your meals and see your nutrient totals."
-                : "Create an account or sign in to save your allergens and dietary preferences."}
-            </p>
-            <button
-              onClick={() => {
-                setLockedFeature(null);
-                onSignInClick();
-              }}
-              className="w-full bg-green-600 text-white py-2 rounded-md font-medium hover:bg-green-700 transition-colors duration-150"
-            >
-              Sign In
-            </button>
-          </div>
-        </div>
+        <Modal
+          title={
+            lockedFeature === "dashboard"
+              ? "Sign in to view your dashboard"
+              : "Sign in to manage your settings"
+          }
+          onClose={() => setLockedFeature(null)}
+          panelClassName="p-6 max-w-sm"
+          titleClassName="text-lg font-semibold text-gray-900 mb-2 pr-8"
+        >
+          <p className="text-sm text-gray-500 mb-6">
+            {lockedFeature === "dashboard"
+              ? "Create an account or sign in to track your meals and see your nutrient totals."
+              : "Create an account or sign in to save your allergens and dietary preferences."}
+          </p>
+          <button
+            onClick={() => {
+              setLockedFeature(null);
+              onSignInClick();
+            }}
+            className="w-full bg-green-600 text-white py-2 rounded-md font-medium hover:bg-green-700 transition-colors duration-150"
+          >
+            Sign In
+          </button>
+        </Modal>
       )}
     </nav>
   );

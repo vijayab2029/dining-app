@@ -74,6 +74,7 @@ function MenuItemCard({ item, selected, quantity, onToggleSelect, onQuantityChan
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
+          aria-label={`Select ${item.name} to log`}
           className="mt-0.5 h-4 w-4 accent-green-600"
         />
       </div>
@@ -119,6 +120,7 @@ function MenuItemCard({ item, selected, quantity, onToggleSelect, onQuantityChan
         <div className="flex items-center gap-2">
           <button
             onClick={() => onQuantityChange(quantity - 1)}
+            aria-label={`Decrease servings of ${item.name}`}
             className="w-6 h-6 rounded-full border border-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium hover:bg-gray-50"
           >
             −
@@ -126,6 +128,7 @@ function MenuItemCard({ item, selected, quantity, onToggleSelect, onQuantityChan
           <span className="text-sm font-medium text-gray-900 w-4 text-center">{quantity}</span>
           <button
             onClick={() => onQuantityChange(quantity + 1)}
+            aria-label={`Increase servings of ${item.name}`}
             className="w-6 h-6 rounded-full border border-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium hover:bg-gray-50"
           >
             +
@@ -136,6 +139,8 @@ function MenuItemCard({ item, selected, quantity, onToggleSelect, onQuantityChan
 
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-label={expanded ? `Show fewer nutrients for ${item.name}` : `Show more nutrients for ${item.name}`}
         className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium hover:bg-green-700 mt-3"
       >
         {expanded ? "-" : "+"}

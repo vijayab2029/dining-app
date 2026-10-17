@@ -62,8 +62,8 @@ function Landing() {
           </h2>
           <div className="flex gap-6">
             <FeatureCard icon={<UtensilsCrossed className="w-6 h-6 text-white" />} title="Menu Browsing" description="Browse real-time menus across all Northeastern Dining Halls" />
-            <FeatureCard icon={<Salad className="w-6 h-6 text-white" />} title="Nutrition Tracking" description="Log meals and track goals and nutritional intake" />
-            <FeatureCard icon={<Filter className="w-6 h-6 text-white" />} title="Dietary Filters" description="Filter by Vegan, Vegetarian, Halal, Gluten-Free, Allergies and more" />
+            <FeatureCard icon={<Salad className="w-6 h-6 text-white" />} title="Nutrition Tracking" description="Log meals and track your daily nutritional intake" />
+            <FeatureCard icon={<Filter className="w-6 h-6 text-white" />} title="Dietary Filters" description="Filter by dietary preferences and allergens. Save your preferences once — they apply automatically every visit." />
           </div>
         </section>
         <section className="py-24 text-center">

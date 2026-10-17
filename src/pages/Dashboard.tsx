@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
+import { UtensilsCrossed } from "lucide-react";
 import { supabase } from "../supabase";
+import EmptyState from "../components/EmptyState";
 import type { Nutrients } from "../components/MenuItemCard";
 import NutrientChart from "../components/NutrientChart";
 
@@ -161,9 +164,29 @@ function Dashboard() {
       </div>
 
       {loading && <p className="text-sm text-gray-500">Loading your logs...</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
-      {!loading && !error && (
+      {!loading && !error && logs.length === 0 && (
+        <EmptyState
+          icon={<UtensilsCrossed size={24} aria-hidden="true" />}
+          title="No meals logged yet"
+          description="Pick what you're eating on the Menu page and log it — your calories and nutrients will show up here."
+          action={
+            <Link
+              to="/menu"
+              className="inline-block px-4 py-2 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+            >
+              Browse the menu
+            </Link>
+          }
+        />
+      )}
+
+      {!loading && !error && logs.length > 0 && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
             {featuredNutrientRows.map(({ key, label, unit }) => (
@@ -215,7 +238,7 @@ function Dashboard() {
 
           <h2 className="text-base font-semibold text-gray-900 mb-3">Logged items</h2>
           {visibleLogs.length === 0 && (
-            <p className="text-sm text-gray-500">Nothing logged in this window yet.</p>
+            <p className="text-sm text-gray-600">Nothing logged in this window yet.</p>
           )}
           <div className="flex flex-col gap-2">
             {visibleLogs.map((log) => (
@@ -237,7 +260,8 @@ function Dashboard() {
                   </span>
                   <button
                     onClick={() => handleDelete(log.id)}
-                    className="text-gray-400 hover:text-red-600 text-sm"
+                    aria-label={`Remove ${log.item_name} from log`}
+                    className="text-gray-500 hover:text-red-600 text-sm rounded-md px-1"
                   >
                     ✕
                   </button>

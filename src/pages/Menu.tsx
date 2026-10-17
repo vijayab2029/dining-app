@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { SearchX, AlertTriangle, UtensilsCrossed } from "lucide-react";
 import { getMenu } from "../api";
 import MenuItemCard from "../components/MenuItemCard";
+import MenuItemCardSkeleton from "../components/MenuItemCardSkeleton";
+import EmptyState from "../components/EmptyState";
 import type { MenuItem } from "../components/MenuItemCard";
 import { supabase } from "../supabase";
 import { normalizeAllergen } from "../utils/allergens";
@@ -23,6 +25,7 @@ function Menu() {
   const [selectedForLog, setSelectedForLog] = useState<Record<string, number>>({});
 
   const [logStatus, setLogStatus] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +79,7 @@ function Menu() {
     return () => {
       cancelled = true;
     };
-  }, [selectedHall, selectedPeriod]);
+  }, [selectedHall, selectedPeriod, reloadKey]);
 
   const allAllergens = Array.from(
     new Set(items.flatMap((item) => item.allergens.map(normalizeAllergen)))
@@ -173,6 +176,15 @@ function Menu() {
 
   const selectedCount = Object.keys(selectedForLog).length;
 
+  const hasActiveFilters =
+    search !== "" || excludedAllergens.length > 0 || selectedPreferences.length > 0;
+
+  function clearFilters() {
+    setSearch("");
+    setExcludedAllergens([]);
+    setSelectedPreferences([]);
+  }
+
   return (
     <div className="flex">
       <aside className="w-56 border-r border-gray-200 p-6">
@@ -230,6 +242,7 @@ function Menu() {
         <input
           type="text"
           placeholder="Search food items..."
+          aria-label="Search food items"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full border border-gray-200 rounded-md px-4 py-2 mb-4"
@@ -299,12 +312,34 @@ function Menu() {
         )}
 
         {loading && (
-          <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-500">
-            <Loader2 className="animate-spin text-green-600" size={20} />
-            <span>Loading menu...</span>
+          <div
+            role="status"
+            aria-busy="true"
+            className="grid grid-cols-2 gap-4"
+          >
+            <span className="sr-only">Loading menu...</span>
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <MenuItemCardSkeleton key={n} />
+            ))}
           </div>
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        {error && !loading && (
+          <EmptyState
+            role="alert"
+            icon={<AlertTriangle size={24} aria-hidden="true" />}
+            title="We couldn't load this menu"
+            description={`Something went wrong fetching ${selectedHall} ${selectedPeriod.toLowerCase()}. Check your connection and try again.`}
+            action={
+              <button
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="px-4 py-2 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+              >
+                Try again
+              </button>
+            }
+          />
+        )}
 
         {!loading && !error && (
           <div className="flex flex-col gap-8">
@@ -329,8 +364,29 @@ function Menu() {
                 </div>
               </div>
             ))}
-            {filteredItems.length === 0 && (
-              <p className="text-sm text-gray-500">No items match your filters.</p>
+            {filteredItems.length === 0 && items.length === 0 && (
+              <EmptyState
+                icon={<UtensilsCrossed size={24} aria-hidden="true" />}
+                title="Nothing on the menu yet"
+                description={`${selectedHall} has no ${selectedPeriod.toLowerCase()} items listed right now. Try another meal period or dining hall.`}
+              />
+            )}
+            {filteredItems.length === 0 && items.length > 0 && (
+              <EmptyState
+                icon={<SearchX size={24} aria-hidden="true" />}
+                title="No items match your filters"
+                description="Try a different search term, or remove some allergen and dietary filters to see more options."
+                action={
+                  hasActiveFilters && (
+                    <button
+                      onClick={clearFilters}
+                      className="px-4 py-2 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      Clear search and filters
+                    </button>
+                  )
+                }
+              />
             )}
           </div>
         )}

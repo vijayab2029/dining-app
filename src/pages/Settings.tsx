@@ -67,54 +67,112 @@ function Settings() {
       : [...list, value];
   }
 
+  function renderSection({
+    title,
+    description,
+    options,
+    selected,
+    gridClassName,
+    onChange,
+  }: {
+    title: string;
+    description: string;
+    options: string[];
+    selected: string[];
+    gridClassName: string;
+    onChange: (next: string[]) => void;
+  }) {
+    const allSelected = selected.length === options.length;
+    return (
+      <section className="border border-gray-200 rounded-xl bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {description}{" "}
+              <span className="text-gray-600 font-medium">
+                {selected.length} of {options.length} selected
+              </span>
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={!loaded || allSelected}
+              onClick={() => onChange([...options])}
+              className="px-3 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              disabled={!loaded || selected.length === 0}
+              onClick={() => onChange([])}
+              className="px-3 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+
+        <div className={`grid gap-2 ${gridClassName}`}>
+          {options.map((option) => {
+            const checked = selected.includes(option);
+            return (
+              <label
+                key={option}
+                className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors ${
+                  checked
+                    ? "border-green-600 bg-green-50 text-gray-900"
+                    : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                } ${!loaded ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  disabled={!loaded}
+                  checked={checked}
+                  onChange={() => onChange(toggle(selected, option))}
+                  className="h-4 w-4 accent-green-600"
+                />
+                {option}
+              </label>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+    <div className="max-w-5xl mx-auto px-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      <p className="text-sm text-gray-500 mt-1 mb-6">
+        Your selections save automatically and pre-filter the menu every time you visit.
+      </p>
 
-      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600 mb-4">
+          {error}
+        </p>
+      )}
 
-      <div className="border border-gray-200 rounded-md p-4 flex gap-8">
-        <div>
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Allergens</h4>
-          <div className="flex flex-col gap-1">
-            {ALLERGENS.map((allergen) => (
-              <label
-                key={allergen}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  disabled={!loaded}
-                  checked={allergens.includes(allergen)}
-                  onChange={() => save(toggle(allergens, allergen), preferences)}
-                />
-                {allergen}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-medium text-gray-900 mb-2">
-            Dietary Preferences
-          </h4>
-          <div className="flex flex-col gap-1">
-            {DIETARY_PREFERENCES.map((pref) => (
-              <label
-                key={pref}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  disabled={!loaded}
-                  checked={preferences.includes(pref)}
-                  onChange={() => save(allergens, toggle(preferences, pref))}
-                />
-                {pref}
-              </label>
-            ))}
-          </div>
-        </div>
+      <div className="flex flex-col gap-6">
+        {renderSection({
+          title: "Allergens",
+          description: "Hide menu items containing these.",
+          options: ALLERGENS,
+          selected: allergens,
+          gridClassName: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+          onChange: (next) => save(next, preferences),
+        })}
+        {renderSection({
+          title: "Dietary Preferences",
+          description: "Only show items matching all of these.",
+          options: DIETARY_PREFERENCES,
+          selected: preferences,
+          gridClassName: "grid-cols-2 sm:grid-cols-3",
+          onChange: (next) => save(allergens, next),
+        })}
       </div>
     </div>
   );
