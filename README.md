@@ -24,67 +24,167 @@ DineNEU is a web app for Northeastern University students to browse live dining 
 
 ## Architecture
 
-The system is easiest to read as two separate flows: the menu data pipeline (browser to backend to DineOnCampus) and the auth and data side (browser directly to Supabase).
+Three views of the same system: where the pieces live and what they trust, how a menu request moves through the backend, and how auth and user data bypass the backend entirely.
 
-### Menu data pipeline
+### System overview
 
-```mermaid
-flowchart LR
-    B["Browser<br/>React + TypeScript"] -->|"GET /api/menu/*"| API["FastAPI"]
-
-    subgraph BE["FastAPI backend"]
-        direction TB
-        API --> MC{"menu_cache hit?<br/>TTL 2h"}
-        MC -->|hit| RESP["JSON response"]
-        MC -->|miss| PID["Resolve period ID<br/>period_cache, TTL 1h"]
-        PID --> FETCH["curl_cffi fetch<br/>Chrome TLS impersonation<br/>+ sec-fetch-* headers"]
-        FETCH --> PARSE["Pydantic parsing<br/>Menu, Category, Item, Nutrients"]
-        PARSE --> EMPTY{"Any categories?"}
-        EMPTY -->|yes| STORE["Store in menu_cache"]
-        STORE --> RESP
-        EMPTY -->|"no (stale period ID?)"| EVICT["Evict period_cache entry"]
-        EVICT -->|"retry once"| PID
-    end
-
-    FETCH <-->|"HTTPS"| UP["DineOnCampus API<br/>apiv4.dineoncampus.com<br/>undocumented"]
-    RESP --> B
+```
+┌──────────────────────────── USER'S BROWSER ────────────────────────────┐
+│                                                                        │
+│   React 19 SPA (Vite build, served as static assets)                   │
+│                                                                        │
+│   ┌────────────────────┐  ┌─────────────────────────────────────────┐  │
+│   │ src/api.ts         │  │ src/supabase.ts                         │  │
+│   │ menu client        │  │ Supabase JS client                      │  │
+│   │ (no credentials)   │  │ (publishable key + user JWT)            │  │
+│   └─────────┬──────────┘  └────────────────────┬────────────────────┘  │
+│             │                                  │                       │
+│   Runs here: allergen/preference filtering, search, serving counts,    │
+│   dashboard aggregation (today / week / month), route protection       │
+└─────────────┼──────────────────────────────────┼───────────────────────┘
+              │                                  │
+              │ HTTPS  /api/menu/*               │ HTTPS  direct,
+              │ (same origin)                    │ never touches Vercel
+              ▼                                  │
+┌─────────────────────────────────┐              │
+│ VERCEL  (one project, one       │              │
+│ origin, two services)           │              │
+│                                 │              │
+│  rewrite /api/*  ──► backend    │              │
+│  rewrite /*      ──► frontend   │              │
+│                                 │              │
+│  ┌───────────────────────────┐  │              │
+│  │ FastAPI  (backend/)       │  │              │
+│  │                           │  │              │
+│  │  routers/menu.py          │  │              │
+│  │  services/dining_service  │  │              │
+│  │  TTL caches (in-memory)   │  │              │
+│  │                           │  │              │
+│  │  Holds no user data.      │  │              │
+│  │  No Supabase credentials. │  │              │
+│  └─────────────┬─────────────┘  │              │
+└────────────────┼────────────────┘              │
+                 │                               │
+                 │ HTTPS, curl_cffi              │
+                 │ (Chrome TLS impersonation)    │
+                 ▼                               ▼
+┌─────────────────────────────────┐  ┌──────────────────────────────────┐
+│ UPSTREAM  (not ours)            │  │ SUPABASE                         │
+│                                 │  │                                  │
+│ DineOnCampus                    │  │  Auth     email/password, JWTs   │
+│ apiv4.dineoncampus.com          │  │                                  │
+│                                 │  │  Postgres, RLS enabled           │
+│ Undocumented; can change        │  │   ├─ meal_logs                   │
+│ without notice                  │  │   └─ user_dietary_settings       │
+│                                 │  │                                  │
+│                                 │  │  Security boundary: RLS policies │
+└─────────────────────────────────┘  └──────────────────────────────────┘
 ```
 
-Without the browser-like headers, the upstream API returns degraded data (a reduced, coffee-only menu), which is why requests go through `curl_cffi` rather than a plain HTTP client. An empty result is returned as-is after the single retry and is not cached.
+### Menu request flow
 
-### Auth and data
-
-```mermaid
-flowchart LR
-    B["Browser<br/>React + TypeScript<br/>Supabase JS client"]
-
-    subgraph SB["Supabase"]
-        direction TB
-        AUTH["Auth<br/>email/password, JWT sessions"]
-        subgraph PG["Postgres, RLS enabled"]
-            direction TB
-            ML[("meal_logs<br/>nutrients jsonb snapshot")]
-            UDS[("user_dietary_settings<br/>allergens, preferences")]
-        end
-        POL["RLS policies<br/>auth.uid() = user_id"]
-        AUTH -->|"JWT identifies the user"| POL
-        POL --> ML
-        POL --> UDS
-    end
-
-    B -->|"sign up / sign in"| AUTH
-    B -->|"queries with publishable key + JWT"| POL
+```
+ Browser                  FastAPI                          DineOnCampus
+    │                        │                                   │
+    │ GET /api/menu/         │                                   │
+    │  ?location_name=…      │                                   │
+    │  &period_name=…        │                                   │
+    │───────────────────────►│                                   │
+    │                        │                                   │
+    │                 ┌──────┴────────────────┐                  │
+    │                 │ menu_cache lookup     │                  │
+    │                 │ key: location+period  │                  │
+    │                 │      +date, TTL 2h    │                  │
+    │                 └──────┬────────────────┘                  │
+    │                        │                                   │
+    │          hit ┌─────────┴─────────┐ miss                    │
+    │      ┌───────┤                   ├───────┐                 │
+    │      │       └───────────────────┘       ▼                 │
+    │      │                      ┌─────────────────────────┐    │
+    │      │                      │ period_cache lookup     │    │
+    │      │                      │ name ──► period ID      │    │
+    │      │                      │ TTL 1h                  │    │
+    │      │                      └────────────┬────────────┘    │
+    │      │                                   │ miss only       │
+    │      │                                   │ GET /periods ──►│
+    │      │                                   │◄── period list ─│
+    │      │                                   ▼                 │
+    │      │                      GET /menu?period=<id> ────────►│
+    │      │                                   │◄── raw JSON ────│
+    │      │                                   ▼                 │
+    │      │                      ┌─────────────────────────┐    │
+    │      │                      │ Pydantic parsing        │    │
+    │      │                      │ Menu > Category > Item  │    │
+    │      │                      │ Nutrients (null if      │    │
+    │      │                      │ missing)                │    │
+    │      │                      └────────────┬────────────┘    │
+    │      │                                   │                 │
+    │      │                         categories empty?           │
+    │      │                         ┌─────────┴─────────┐       │
+    │      │                      no │                   │ yes   │
+    │      │                         │                   ▼       │
+    │      │                         │      evict period_cache   │
+    │      │                         │      entry, refetch ONCE  │
+    │      │                         │      (back to period      │
+    │      │                         │       lookup above)       │
+    │      │                         ▼                   │       │
+    │      │                 store in menu_cache         │       │
+    │      │                 (only if non-empty)         │       │
+    │      │                         │                   │       │
+    │      │                         ▼                   ▼       │
+    │      └───────────────────────► response ◄── (empty result  │
+    │                                │          returned as-is,  │
+    │                                │          not cached)      │
+    │◄───────────────────────────────┘                           │
+    │ JSON: categories[].items[]                                 │
+    │                                                            │
+    ▼ filters and search applied client-side, no further requests
 ```
 
-### Deployment topology
+### Auth and user data flow
 
-```mermaid
-flowchart LR
-    B["Browser"] --> V["Vercel<br/>single origin"]
-    V -->|"/api/*"| BE["FastAPI service<br/>backend/"]
-    V -->|"everything else"| FE["Vite frontend<br/>repo root"]
-    B -.->|"direct, bypasses Vercel"| SB["Supabase"]
 ```
+ Browser (Supabase JS client)                       Supabase
+┌───────────────────────────┐
+│ 1. sign up / sign in      │ ───────────────►  Auth
+│                           │ ◄───────────────  JWT session
+└─────────────┬─────────────┘
+              │
+              │ 2. every query carries publishable key + JWT
+              ▼
+        ┌───────────────────────────────────────────────────────┐
+        │ Postgres                                              │
+        │                                                       │
+        │   RLS policy check on every statement:                │
+        │   auth.uid() = user_id   (decoded from the JWT)       │
+        │            │                                          │
+        │     pass ──┴── fail: row invisible / write rejected   │
+        │      │                                                │
+        │      ▼                                                │
+        │   ┌──────────────────────────┐                        │
+        │   │ meal_logs                │ select, insert, delete │
+        │   │  user_id, hall, period   │                        │
+        │   │  quantity                │                        │
+        │   │  nutrients  jsonb        │ snapshot at log time   │
+        │   └──────────────────────────┘                        │
+        │   ┌──────────────────────────┐                        │
+        │   │ user_dietary_settings    │ select, insert, update │
+        │   │  allergens jsonb         │                        │
+        │   │  dietary_preferences     │                        │
+        │   └──────────────────────────┘                        │
+        └───────────────────────────────────────────────────────┘
+
+ What reads and writes each table
+
+   Menu page       reads   user_dietary_settings  (pre-fills filters)
+                   writes  meal_logs              (nutrients copied from the
+                                                   menu item in memory)
+   Settings page   reads/upserts user_dietary_settings
+   Dashboard       reads   meal_logs  ──► summed in the browser by time window
+                   deletes meal_logs rows
+```
+
+Without the browser-like headers, the upstream API returns degraded data (a reduced, coffee-only menu), which is why requests go through `curl_cffi` rather than a plain HTTP client.
 
 **Two services.** The React frontend and the FastAPI backend are separate services. The frontend calls the backend at `VITE_API_URL` for menu data (`/api/menu`, `/api/menu/periods`, `/api/menu/locations`). It talks to Supabase directly with the public client for everything user-specific.
 
@@ -94,13 +194,21 @@ flowchart LR
 
 ## Design decisions
 
-**jsonb nutrient snapshots.** Each `meal_logs` row stores the item's nutrients as they were at log time, rather than referencing a menu item. Menu items change or disappear from day to day, so a snapshot keeps past logs and dashboard totals accurate.
+**jsonb nutrient snapshots.** Each `meal_logs` row stores the item's nutrients as they were at log time, rather than referencing a menu item. Menu items change or disappear from day to day, and the upstream API has no stable item ID or history, so a snapshot keeps past logs and dashboard totals accurate.
 
-**RLS as the security boundary.** The browser queries Postgres directly, and policies restrict every row to its owner with `auth.uid() = user_id`. Because the backend holds no user data and has no Supabase credentials, there is no backend middleware that would need to enforce access.
+**RLS as the security boundary.** The browser queries Postgres directly, and policies restrict every row to its owner with `auth.uid() = user_id`. Because the backend holds no user data and has no Supabase credentials, there is no backend middleware that would need to enforce access, and the publishable key in the bundle is safe to expose.
 
-**`null` means unknown, not zero.** In the `Nutrients` model, a value the upstream API does not provide is `null`, not `0`. Treating it as zero would silently under-count in the dashboard totals and imply an item has none of a nutrient when the data is simply missing.
+**`null` means unknown, not zero.** In the `Nutrients` model, a value the upstream API does not provide is `null`, not `0`. A real zero and a missing value are different facts, and collapsing them at the parsing layer would make that distinction unrecoverable for everything downstream, including the snapshots stored in `meal_logs`.
 
-**Stale-period-ID recovery.** Period IDs are cached for an hour, but upstream can change them, in which case a menu request comes back empty. When that happens the backend evicts the cached periods for that location, re-resolves the IDs and retries once, so a stale ID does not leave the menu empty until the cache expires.
+**Stale-period-ID recovery.** Period IDs are cached for an hour, but upstream can change them, in which case a menu request comes back empty. When that happens the backend evicts the cached periods for that location, re-resolves the IDs and retries once, so a stale ID does not leave the menu empty until the cache expires. Empty results are never written to `menu_cache`, so a bad response cannot stick for two hours.
+
+**Backend does not hold user data.** Keeping the FastAPI service stateless and credential-free means it can be deployed, scaled or replaced without touching auth, and a compromise of it exposes only public menu data. Everything user-specific goes through Supabase, where RLS applies.
+
+**Filtering on the client.** The backend returns the full menu for a hall and period, and allergen, preference and text filters run in the browser. Menus are small, so changing a filter is instant with no extra requests, and the backend cache can be keyed only on location, period and date instead of on every filter combination.
+
+**Allergen normalization.** Upstream labels the same allergen several ways (`Milk*`, `Milk (Sheep Milk)`). `normalizeAllergen` collapses them to one canonical name, and it is applied to both the filter options and the item allergens, so excluding "Milk" catches every variant.
+
+**Cancellable effects and optimistic settings.** Data-loading effects set a `cancelled` flag on cleanup so a slow response for a previous hall or period cannot overwrite a newer one. Settings toggles update the UI immediately and roll back if the Supabase write fails.
 
 ## Getting started
 
