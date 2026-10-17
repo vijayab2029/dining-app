@@ -65,8 +65,8 @@ Three views of the same system: where the pieces live and what they trust, how a
 │  └─────────────┬─────────────┘  │              │
 └────────────────┼────────────────┘              │
                  │                               │
-                 │ HTTPS, curl_cffi              │
-                 │ (Chrome TLS impersonation)    │
+                 │ HTTPS            │
+                 │     │
                  ▼                               ▼
 ┌─────────────────────────────────┐  ┌──────────────────────────────────┐
 │ UPSTREAM  (not ours)            │  │ SUPABASE                         │
