@@ -65,11 +65,11 @@ Three views of the same system: where the pieces live and what they trust, how a
 │  └─────────────┬─────────────┘  │              │
 └────────────────┼────────────────┘              │
                  │                               │
-                 │ HTTPS            │
-                 │     │
+                 │ HTTPS                         │
+                 │                               │
                  ▼                               ▼
 ┌─────────────────────────────────┐  ┌──────────────────────────────────┐
-│ UPSTREAM  (not ours)            │  │ SUPABASE                         │
+│ UPSTREAM                        │  │ SUPABASE                         │
 │                                 │  │                                  │
 │ DineOnCampus                    │  │  Auth     email/password, JWTs   │
 │ apiv4.dineoncampus.com          │  │                                  │
